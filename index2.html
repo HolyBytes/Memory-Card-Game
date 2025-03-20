@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Card Game</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            max-width: 800px;
+        }
+
+        .card-container {
+            perspective: 1000px;
+            margin-bottom: 15px;
+        }
+
+        .memory-card {
+            width: 100%;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            background: linear-gradient(145deg, #0066cc, #0055aa);
+            color: white;
+            cursor: pointer;
+            border-radius: 12px;
+            user-select: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform 0.6s, box-shadow 0.3s;
+            transform-style: preserve-3d;
+        }
+
+        .memory-card:hover {
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        .memory-card.flipped {
+            transform: rotateY(180deg);
+            background: white;
+            color: #000;
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backface-visibility: hidden;
+            border-radius: 12px;
+        }
+
+        .card-back {
+            background: linear-gradient(145deg, #0066cc, #0055aa);
+            transform: rotateY(0deg);
+        }
+
+        .card-front {
+            background: white;
+            transform: rotateY(180deg);
+        }
+
+        .score-panel {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(145deg, #0066cc, #0055aa);
+            border: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(145deg, #0077ee, #0066cc);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        .modal-content {
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .main-title {
+            color: #0055aa;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            font-weight: bold;
+        }
+
+        .menu-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .menu-btn {
+            margin: 10px 0;
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1rem;
+        }
+
+        .timer {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        #confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <div class="container py-5">
+        <!-- Main Menu Screen -->
+        <div id="main-menu" class="screen active">
+            <div class="text-center mb-5">
+                <h1 class="main-title display-4 mb-4 animate__animated animate__fadeInDown">Memory Card Game</h1>
+                <p class="lead animate__animated animate__fadeIn animate__delay-1s">Tantang ingatanmu dengan permainan kartu memori yang seru!</p>
+            </div>
+            
+            <div class="row justify-content-center animate__animated animate__fadeIn animate__delay-1s">
+                <div class="col-md-8">
+                    <div class="menu-card">
+                        <div class="d-grid gap-3">
+                            <button id="start-game-btn" class="btn btn-primary menu-btn">Mulai Permainan</button>
+                            <button id="difficulty-btn" class="btn btn-primary menu-btn">Pilih Kesulitan</button>
+                            <button id="instructions-btn" class="btn btn-primary menu-btn">Cara Bermain</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Difficulty Selection Screen -->
+        <div id="difficulty-screen" class="screen">
+            <div class="text-center mb-5">
+                <h1 class="main-title mb-4">Pilih Tingkat Kesulitan</h1>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="menu-card">
+                        <div class="d-grid gap-3">
+                            <button class="btn btn-success menu-btn difficulty-option" data-level="easy">Mudah (4x3)</button>
+                            <button class="btn btn-warning menu-btn difficulty-option" data-level="medium">Sedang (4x4)</button>
+                            <button class="btn btn-danger menu-btn difficulty-option" data-level="hard">Sulit (5x4)</button>
+                            <button class="btn btn-secondary menu-btn back-btn">Kembali ke Menu</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions Screen -->
+        <div id="instructions-screen" class="screen">
+            <div class="text-center mb-4">
+                <h1 class="main-title mb-3">Cara Bermain</h1>
+            </div>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="menu-card">
+                        <div class="instructions-content">
+                            <h4 class="mb-3">Aturan Permainan:</h4>
+                            <ol class="fs-5 mb-4">
+                                <li>Kartu-kartu akan diacak dan diletakkan menghadap ke bawah</li>
+                                <li>Balik dua kartu dengan mengkliknya</li>
+                                <li>Jika kedua kartu cocok, kartu akan tetap terbuka</li>
+                                <li>Jika kartu tidak cocok, keduanya akan tertutup kembali</li>
+                                <li>Tujuanmu adalah menemukan semua pasangan kartu</li>
+                                <li>Permainan selesai ketika semua pasangan telah ditemukan</li>
+                            </ol>
+                            <h4 class="mb-3">Tingkat Kesulitan:</h4>
+                            <ul class="fs-5 mb-4">
+                                <li><strong>Mudah:</strong> 12 kartu (6 pasang)</li>
+                                <li><strong>Sedang:</strong> 16 kartu (8 pasang)</li>
+                                <li><strong>Sulit:</strong> 20 kartu (10 pasang)</li>
+                            </ul>
+                            <div class="d-grid">
+                                <button class="btn btn-secondary menu-btn back-btn">Kembali ke Menu</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="main-title mb-0">Memory Card Game</h1>
+                <button id="back-to-menu" class="btn btn-secondary">Menu Utama</button>
+            </div>
+
+            <div class="score-panel mb-4">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <div class="mb-2 mb-md-0">
+                            <span class="fs-5">Giliran: </span>
+                            <span id="moves" class="fs-5 fw-bold">0</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="timer mb-2 mb-md-0">
+                            <span id="minutes">00</span>:<span id="seconds">00</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <button id="restart" class="btn btn-primary">Mulai Ulang</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="game-board" class="row g-3 justify-content-center">
+                <!-- Cards will be generated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Win Modal -->
+    <div class="modal fade" id="winModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Selamat!</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <h3 class="mb-4">Anda Menang! 🎉</h3>
+                    <p class="fs-5 mb-3">Waktu: <span id="final-time">00:00</span></p>
+                    <p class="fs-5 mb-4">Giliran: <span id="final-moves">0</span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-primary" id="play-again">Main Lagi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="confetti"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Emoji arrays for different difficulty levels
+        const emojis = {
+            easy: ['🍎', '🍌', '🍉', '🍇', '🍓', '🍒'],
+            medium: ['🍎', '🍌', '🍉', '🍇', '🍓', '🍒', '🍍', '🥭'],
+            hard: ['🍎', '🍌', '🍉', '🍇', '🍓', '🍒', '🍍', '🥭', '🥑', '🥝']
+        };
+
+        // Game configuration
+        const config = {
+            difficulty: 'medium', // Default difficulty
+            gridSize: {
+                easy: { cols: 4, rows: 3 },
+                medium: { cols: 4, rows: 4 },
+                hard: { cols: 5, rows: 4 }
+            }
+        };
+
+        // Game state
+        let cards = [];
+        let flippedCards = [];
+        let matchedCards = [];
+        let moves = 0;
+        let timer;
+        let seconds = 0;
+        let minutes = 0;
+        let gameStarted = false;
+
+        // DOM Elements
+        const mainMenu = document.getElementById('main-menu');
+        const difficultyScreen = document.getElementById('difficulty-screen');
+        const instructionsScreen = document.getElementById('instructions-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const gameBoard = document.getElementById('game-board');
+        const movesElement = document.getElementById('moves');
+        const secondsElement = document.getElementById('seconds');
+        const minutesElement = document.getElementById('minutes');
+        const restartButton = document.getElementById('restart');
+        const backToMenuButton = document.getElementById('back-to-menu');
+        const startGameButton = document.getElementById('start-game-btn');
+        const difficultyButton = document.getElementById('difficulty-btn');
+        const instructionsButton = document.getElementById('instructions-btn');
+        const difficultyOptions = document.querySelectorAll('.difficulty-option');
+        const backButtons = document.querySelectorAll('.back-btn');
+        const winModal = new bootstrap.Modal(document.getElementById('winModal'));
+        const finalTimeElement = document.getElementById('final-time');
+        const finalMovesElement = document.getElementById('final-moves');
+        const playAgainButton = document.getElementById('play-again');
+
+        // Navigation Functions
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // Timer Functions
+        function startTimer() {
+            timer = setInterval(() => {
+                seconds++;
+                if (seconds === 60) {
+                    minutes++;
+                    seconds = 0;
+                }
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timer);
+        }
+
+        function resetTimer() {
+            stopTimer();
+            seconds = 0;
+            minutes = 0;
+            updateTimerDisplay();
+        }
+
+        function updateTimerDisplay() {
+            secondsElement.textContent = seconds < 10 ? `0${seconds}` : seconds;
+            minutesElement.textContent = minutes < 10 ? `0${minutes}` : minutes;
+        }
+
+        // Game Functions
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function resetGame() {
+            gameBoard.innerHTML = '';
+            flippedCards = [];
+            matchedCards = [];
+            moves = 0;
+            movesElement.textContent = moves;
+            resetTimer();
+            gameStarted = false;
+            generateCards();
+        }
+
+        function updateMoves() {
+            moves++;
+            movesElement.textContent = moves;
+        }
+
+        function generateCards() {
+            // Get selected emoji set based on difficulty
+            const selectedEmojis = emojis[config.difficulty];
+            cards = [...selectedEmojis, ...selectedEmojis]; // Duplicate for pairs
+            cards = shuffle(cards);
+
+            gameBoard.innerHTML = '';
+            
+            // Set column classes based on difficulty
+            const gridSize = config.gridSize[config.difficulty];
+            const colClass = `col-${12/gridSize.cols}`;
+            
+            cards.forEach((item, index) => {
+                const cardContainer = document.createElement('div');
+                cardContainer.classList.add('card-container', colClass);
+                
+                const card = document.createElement('div');
+                card.classList.add('memory-card');
+                card.dataset.index = index;
+                
+                const cardBack = document.createElement('div');
+                cardBack.classList.add('card-face', 'card-back');
+                cardBack.innerHTML = '?';
+                
+                const cardFront = document.createElement('div');
+                cardFront.classList.add('card-face', 'card-front');
+                cardFront.innerHTML = item;
+                
+                card.appendChild(cardBack);
+                card.appendChild(cardFront);
+                card.addEventListener('click', flipCard);
+                
+                cardContainer.appendChild(card);
+                gameBoard.appendChild(cardContainer);
+            });
+        }
+
+        function flipCard() {
+            if (!gameStarted) {
+                gameStarted = true;
+                startTimer();
+            }
+            
+            if (flippedCards.length < 2 && !this.classList.contains('flipped')) {
+                const index = this.dataset.index;
+                this.classList.add('flipped');
+                flippedCards.push(this);
+
+                if (flippedCards.length === 2) {
+                    updateMoves();
+                    setTimeout(checkMatch, 800);
+                }
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            const index1 = card1.dataset.index;
+            const index2 = card2.dataset.index;
+
+            if (cards[index1] === cards[index2]) {
+                matchedCards.push(card1, card2);
+                
+                // Add success animation
+                card1.classList.add('animate__animated', 'animate__pulse');
+                card2.classList.add('animate__animated', 'animate__pulse');
+                
+                flippedCards = [];
+                
+                // Check if game is complete
+                if (matchedCards.length === cards.length) {
+                    gameWon();
+                }
+            } else {
+                // Add error animation
+                card1.classList.add('animate__animated', 'animate__shakeX');
+                card2.classList.add('animate__animated', 'animate__shakeX');
+                
+                setTimeout(() => {
+                    card1.classList.remove('flipped', 'animate__animated', 'animate__shakeX');
+                    card2.classList.remove('flipped', 'animate__animated', 'animate__shakeX');
+                    flippedCards = [];
+                }, 500);
+            }
+        }
+
+        function gameWon() {
+            stopTimer();
+            finalTimeElement.textContent = `${minutes < 10 ? '0' + minutes : minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+            finalMovesElement.textContent = moves;
+            
+            // Show confetti
+            createConfetti();
+            
+            setTimeout(() => {
+                winModal.show();
+            }, 1000);
+        }
+
+        function createConfetti() {
+            const confetti = document.getElementById('confetti');
+            confetti.innerHTML = '';
+            
+            const colors = ['#f94144', '#f3722c', '#f8961e', '#f9c74f', '#90be6d', '#43aa8b', '#577590'];
+            
+            for (let i = 0; i < 150; i++) {
+                const confettiPiece = document.createElement('div');
+                confettiPiece.style.position = 'absolute';
+                confettiPiece.style.width = Math.random() * 15 + 5 + 'px';
+                confettiPiece.style.height = Math.random() * 8 + 5 + 'px';
+                confettiPiece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confettiPiece.style.left = Math.random() * 100 + 'vw';
+                confettiPiece.style.top = -20 + 'px';
+                confettiPiece.style.opacity = Math.random() + 0.5;
+                confettiPiece.style.transform = `rotate(${Math.random() * 360}deg)`;
+                
+                // Animation
+                confettiPiece.animate(
+                    [
+                        { transform: `translate(0, 0) rotate(0deg)`, opacity: 1 },
+                        { transform: `translate(${Math.random() * 100 - 50}px, ${window.innerHeight}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+                    ],
+                    {
+                        duration: Math.random() * 3000 + 2000,
+                        easing: 'cubic-bezier(0,0.2,1,1)',
+                        fill: 'forwards'
+                    }
+                );
+                
+                confetti.appendChild(confettiPiece);
+            }
+            
+            setTimeout(() => {
+                confetti.innerHTML = '';
+            }, 5000);
+        }
+
+        // Event Listeners
+        startGameButton.addEventListener('click', () => {
+            showScreen('game-screen');
+            resetGame();
+        });
+
+        difficultyButton.addEventListener('click', () => {
+            showScreen('difficulty-screen');
+        });
+
+        instructionsButton.addEventListener('click', () => {
+            showScreen('instructions-screen');
+        });
+
+        backButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                showScreen('main-menu');
+            });
+        });
+
+        difficultyOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                config.difficulty = option.dataset.level;
+                showScreen('game-screen');
+                resetGame();
+            });
+        });
+
+        restartButton.addEventListener('click', resetGame);
+        
+        backToMenuButton.addEventListener('click', () => {
+            stopTimer();
+            showScreen('main-menu');
+        });
+        
+        playAgainButton.addEventListener('click', () => {
+            winModal.hide();
+            resetGame();
+        });
+
+        // Initialize the game
+        generateCards();
+    </script>
+</body>
+</html>
